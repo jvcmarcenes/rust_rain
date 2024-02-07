@@ -50,10 +50,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut stdout = io::stdout();
     let mut rng = rand::thread_rng();
 
+    terminal::enable_raw_mode()?;
+
     stdout.queue(terminal::Clear(terminal::ClearType::All))?;
     stdout.queue(cursor::Hide)?;
 
-    let (width, height) = crossterm::terminal::size()?;
+    let (width, height) = terminal::size()?;
 
     let mut columns =
         std::iter::repeat(Column(ParticleKind::Clear)).take(width as usize / 2).collect::<Vec<_>>();
