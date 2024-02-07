@@ -42,9 +42,9 @@ struct Particle {
 }
 
 /// The perthousand probability that a given column will spawn a raining particle.
-const RAIN_PROB: u16 = 100;
+const RAIN_PROB: u16 = 50;
 /// The perthousand probability that a given column will spawn a clearing particle.
-const CLEAR_PROB: u16 = 100;
+const CLEAR_PROB: u16 = 50;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut stdout = io::stdout();
