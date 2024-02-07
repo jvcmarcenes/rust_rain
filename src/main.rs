@@ -63,12 +63,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         for (x, col) in columns.iter_mut().enumerate() {
             let x = x as u16;
-            let (prob, cell) = match col.0 {
-                ParticleKind::Rain(_) => (CLEAR_PROB, ParticleKind::Clear),
-                ParticleKind::Clear => (RAIN_PROB, ParticleKind::Rain(rand_char())),
+            let (prob, cell): (_, fn() -> _) = match col.0 {
+                ParticleKind::Rain(_) => (CLEAR_PROB, || ParticleKind::Clear),
+                ParticleKind::Clear => (RAIN_PROB, || ParticleKind::Rain(rand_char())),
             };
 
             if rng.gen_range(0..=1000) <= prob {
+                let cell = cell();
                 rain.push(Particle { pos: (x * 2, 0), kind: cell });
                 col.0 = cell;
             }
