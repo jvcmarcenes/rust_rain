@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::io::{self, Write};
 
-use crossterm::{cursor, style, terminal, QueueableCommand};
+use crossterm::{cursor, event, style, terminal, QueueableCommand};
 use rand::Rng;
 
 /// A static string containing all characters that the program will use.
@@ -41,9 +41,9 @@ struct Particle {
     kind: ParticleKind,
 }
 
-/// The probability that a given column will spawn a raining particle.
+/// The perthousand probability that a given column will spawn a raining particle.
 const RAIN_PROB: u16 = 100;
-/// The probability that a given column will spawn a clearing particle.
+/// The perthousand probability that a given column will spawn a clearing particle.
 const CLEAR_PROB: u16 = 100;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -113,6 +113,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         stdout.flush()?;
 
-        std::thread::sleep(std::time::Duration::from_millis(30));
+        let wait_time = std::time::Duration::from_millis(30);
+        if event::poll(wait_time)? {
+            let event = event::read()?;
+            if let event::Event::Key(event) = event {
+                if matches!(event.code, event::KeyCode::Char('q')) {
+                    break;
+                }
+            }
+        }
     }
+
+    stdout.queue(terminal::Clear(terminal::ClearType::All))?;
+    stdout.queue(cursor::MoveTo(0, 0))?;
+
+    Ok(())
 }
