@@ -1,0 +1,1 @@
+An implementation of a matrix rain terminal visualization. This is inspired by the `cmatrix` program.
