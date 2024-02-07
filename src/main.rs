@@ -4,6 +4,7 @@ use std::io::{self, Write};
 use crossterm::{cursor, style, terminal, QueueableCommand};
 use rand::Rng;
 
+/// A static string containing all characters that the program will use.
 static RANDOM_CHARACTERS: &str = concat!(
     "abcdefghijklmnopqrstuvwxyz",
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
@@ -11,29 +12,39 @@ static RANDOM_CHARACTERS: &str = concat!(
     "!@#$%&*()_-+=[{]}~,.<>;:|\\/?"
 );
 
+/// Generates a random character that's contained in [`RANDOM_CHARACTERS`]
 fn rand_char() -> char {
     let len = RANDOM_CHARACTERS.len();
     let i = rand::thread_rng().gen_range(0..len);
     RANDOM_CHARACTERS.chars().nth(i).unwrap()
 }
 
+/// The state of a column, what was the last particle emitted.
 #[derive(Debug, Clone)]
-struct Column(Drop);
+struct Column(ParticleKind);
 
+/// The kind for a particle.
 #[derive(Debug, Clone, Copy)]
-enum Drop {
+enum ParticleKind {
+    /// Falls down, generating random characters in its path.
     Rain(char),
-    Stop,
+    /// Falls down, clearing the characters in its path.
+    Clear,
 }
 
+/// A particle will move through the screen and modify characters on it.
 #[derive(Debug, Clone)]
-struct RainDrop {
+struct Particle {
+    /// The position of this particle on the screen
     pos: (u16, u16),
-    cell: Drop,
+    /// The kind for this particle.
+    kind: ParticleKind,
 }
 
+/// The probability that a given column will spawn a raining particle.
 const RAIN_PROB: u16 = 100;
-const STOP_PROB: u16 = 100;
+/// The probability that a given column will spawn a clearing particle.
+const CLEAR_PROB: u16 = 100;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut stdout = io::stdout();
@@ -45,20 +56,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (width, height) = crossterm::terminal::size()?;
 
     let mut columns =
-        std::iter::repeat(Column(Drop::Stop)).take(width as usize / 2).collect::<Vec<_>>();
+        std::iter::repeat(Column(ParticleKind::Clear)).take(width as usize / 2).collect::<Vec<_>>();
 
-    let mut rain = Vec::<RainDrop>::new();
+    let mut rain = Vec::<Particle>::new();
 
     loop {
         for (x, col) in columns.iter_mut().enumerate() {
             let x = x as u16;
             let (prob, cell) = match col.0 {
-                Drop::Rain(_) => (STOP_PROB, Drop::Stop),
-                Drop::Stop => (RAIN_PROB, Drop::Rain(rand_char())),
+                ParticleKind::Rain(_) => (CLEAR_PROB, ParticleKind::Clear),
+                ParticleKind::Clear => (RAIN_PROB, ParticleKind::Rain(rand_char())),
             };
 
             if rng.gen_range(0..=1000) <= prob {
-                rain.push(RainDrop { pos: (x * 2, 0), cell });
+                rain.push(Particle { pos: (x * 2, 0), kind: cell });
                 col.0 = cell;
             }
         }
@@ -67,8 +78,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         for (idx, drop) in rain.iter_mut().enumerate() {
             let (x, y) = drop.pos;
 
-            match drop.cell {
-                Drop::Rain(ref mut c) => {
+            match drop.kind {
+                ParticleKind::Rain(ref mut c) => {
                     if y > 0 {
                         stdout.queue(cursor::MoveTo(x, y - 1))?;
                         stdout.queue(style::SetForegroundColor(style::Color::DarkGreen))?;
@@ -82,7 +93,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         write!(stdout, "{c}")?;
                     }
                 }
-                Drop::Stop => {
+                ParticleKind::Clear => {
                     stdout.queue(cursor::MoveTo(x, y))?;
                     write!(stdout, " ")?;
                 }
