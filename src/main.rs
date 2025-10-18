@@ -28,8 +28,8 @@ impl Default for Config {
         Self {
             char_set: char_sets::ASCII,
             direction: Direction::Down,
-            delay: Duration::from_millis(50),
-            color: Color::DarkGrey,
+            delay: Duration::from_millis(60),
+            color: Color::DarkGreen,
         }
     }
 }
